@@ -6,6 +6,7 @@ import { Product } from '../product/product.schema';
 
 @Injectable()
 export class SearchService {
+  [x: string]: any;
   constructor(
     @InjectModel(Product.name) private productModel: Model<Product>,
   ) {}

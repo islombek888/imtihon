@@ -1,14 +1,12 @@
-import { Module } from '@nestjs/common';
+import { Module, ForwardReference, Get, Type } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+
 import { AnalyticsService } from './analytics.service';
 import { AnalyticsController } from './analytics.controller';
+
 import { Order, OrderSchema } from '../order/schema/order.schema';
 import { Product, ProductSchema } from '../product/product.schema';
-
-
-
 import { User, UserSchema } from '../user/user.schema';
-
 
 @Module({
   imports: [

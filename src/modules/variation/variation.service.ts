@@ -7,6 +7,7 @@ import { Variation } from './schema/variation.schema';
 
 @Injectable()
 export class VariationService {
+  [x: string]: any;
   constructor(
     @InjectModel(Variation.name)
     private readonly variationModel: Model<Variation>,

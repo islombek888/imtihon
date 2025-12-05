@@ -6,6 +6,10 @@ import { ChangePasswordDto } from './dto/chane-password.dto';
 
 @Controller('user')
 export class UserController {
+  [x: string]: any;
+  create(dto: { fullName: string; email: string; password: string; }) {
+      throw new Error('Method not implemented.');
+  }
   constructor(private readonly userService: UserService) {}
 
 

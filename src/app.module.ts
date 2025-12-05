@@ -17,15 +17,28 @@ import jwtConfig from './config/jwt.config';
 import s3Config from './config/s3.config';
 import throttleConfig from './config/throttle.config';
 import mailConfig from './config/mail.config';
+import { LoggerModule } from './common/logger/logger.module';
+import { DocumentationModule } from './modules/documentation/documentation.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { DeliveryModule } from './modules/delivery/delivery.module';
+
+import { AdminModule } from './modules/admin/admin.module';
+
 
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    MongooseModule.forRoot(process.env.MONGO_URI as string, {
-      // useNewUrlParser: true,
-      // useUnifiedTopology: true,
+    ConfigModule.forRoot({
+      load: [appConfig,
+        databaseConfig,
+        jwtConfig,
+        mailConfig,
+        s3Config,
+        throttleConfig,],
+      isGlobal: true
+
     }),
+    MongooseModule.forRoot(process.env.MONGO_URI as string),
 
 
     AuthModule,
@@ -38,12 +51,16 @@ import mailConfig from './config/mail.config';
     ReviewModule,
     PromoModule,
     PaymentModule,
-    // appConfig,
-    // databaseConfig,
-    // jwtConfig,
-    // mailConfig,
-    // s3Config,
-    // throttleConfig,
+    DocumentationModule,
+    LoggerModule,
+    AnalyticsModule,
+    AnalyticsModule,
+    DeliveryModule,
+    CartModule,
+    AdminModule,
+    CategoryModule,
+    CartModule,
+    DeliveryModule,
 
   ],
   controllers: [],

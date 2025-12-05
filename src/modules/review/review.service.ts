@@ -9,6 +9,7 @@ import { Order } from '../order/schema/order.schema';
 
 @Injectable()
 export class ReviewService {
+  [x: string]: any;
   constructor(
     @InjectModel(Review.name) private reviewModel: Model<Review>,
     @InjectModel(Order.name) private orderModel: Model<Order>,

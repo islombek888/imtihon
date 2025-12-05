@@ -9,6 +9,7 @@ import { ChangePasswordDto } from './dto/chane-password.dto';
 
 @Injectable()
 export class UserService {
+  [x: string]: any;
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
   ) {}

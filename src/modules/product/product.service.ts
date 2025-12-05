@@ -11,9 +11,11 @@ import { buildProductMatch } from './filters/filters-builder.utils';
 
 @Injectable()
 export class ProductService {
-  findById(product: any) {
-    throw new Error('Method not implemented.');
-  }
+  [x: string]: any;
+ async findById(id: string): Promise<any> {
+   return await this.productModel.findById(id).lean();
+}
+
   constructor(
     @InjectModel(Product.name) private productModel: Model<Product>,
   ) {}
@@ -25,7 +27,7 @@ export class ProductService {
   async findAllWithFilters(filterDto: ProductFilterDto) {
     const match = buildProductMatch(filterDto);
     const sort = buildSort(filterDto.sortBy);
-    const { page, limit, skip, } = getPagination(filterDto.page, filterDto.limit);
+    const { skip, take } = getPagination(filterDto.page, filterDto.limit);
 
     
     const pipeline: any[] = [
@@ -67,7 +69,7 @@ export class ProductService {
       {
         $facet: {
           metadata: [{ $count: 'total' }],
-          data: [{ $skip: skip }, { $limit: limit }],
+          data: [{ $skip: skip }, { $take:take }],
         },
       },
     ];
@@ -77,8 +79,7 @@ export class ProductService {
     const metadata = result[0].metadata[0] || { total: 0 };
     return {
       total: metadata.total,
-      page,
-      limit,
+     
       data: result[0].data,
     };
   }

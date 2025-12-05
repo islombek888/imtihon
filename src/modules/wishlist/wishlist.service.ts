@@ -7,6 +7,7 @@ import { Wishlist, WishlistDocument } from './schema/wishlist.schema';
 
 @Injectable()
 export class WishlistService {
+  [x: string]: any;
   constructor(
     @InjectModel(Wishlist.name)
     private wishlistModel: Model<WishlistDocument>,

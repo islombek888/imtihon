@@ -23,7 +23,7 @@ export class UploadController {
     }),
   )
   uploadSingle(@UploadedFile() file: Express.Multer.File) {
-    return this.uploadService.uploadSuccess(file);
+    return this.uploadService.uploadSingle(file);
   }
 
   @Post('multiple')

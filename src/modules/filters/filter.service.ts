@@ -6,30 +6,33 @@ import { Product } from '../product/product.schema';
 
 @Injectable()
 export class FiltersService {
+  [x: string]: any;
   constructor(
     @InjectModel(Product.name)
     private readonly productModel: Model<ProductFilterDto>,
-  ) {}
+  ) { }
 
   async filter(dto: ProductFilterDto) {
     const query: any = {};
 
-    
+
     if (dto.category) query.category = dto.category;
 
-    
+
     if (dto.brand) query.brand = dto.brand;
 
-   
+
     if (dto.minPrice) query.price = { ...query.price, $gte: Number(dto.minPrice) };
 
-    
+
     if (dto.maxPrice) query.price = { ...query.price, $lte: Number(dto.maxPrice) };
 
 
-    if (dto.inStock !== undefined) query.inStock = dto.inStock === 'true' ;
+    if (dto.inStock !== undefined) {
+      query.inStock = dto.inStock ;
+    }
 
- 
+
     let sort: any = {};
 
     switch (dto.sort) {

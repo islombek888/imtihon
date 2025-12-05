@@ -7,6 +7,7 @@ import { Promo } from './promo.schema';
 
 @Injectable()
 export class PromoService {
+  [x: string]: any;
   constructor(
     @InjectModel(Promo.name) private promoModel: Model<Promo>,
   ) {}

@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -11,9 +10,10 @@ import { UpdateQuantityDto } from './dto/update-quantity.dto';
 
 @Injectable()
 export class CartService {
-  getUserCart(userId: string) {
-    throw new Error('Method not implemented.');
-  }
+  async getUserCart(userId: string): Promise<any> {
+   return await this.cartModel.findOne({ user: userId }).lean();
+}
+
   constructor(
     @InjectModel(Cart.name) private cartModel: Model<CartDocument>,
   ) {}

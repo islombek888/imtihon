@@ -9,6 +9,7 @@ import { User } from '../user/user.schema';
 
 @Injectable()
 export class RolesService {
+  [x: string]: any;
   constructor(
     @InjectModel(Role.name) private roleModel: Model<RoleDocument>,
     @InjectModel(User.name) private userModel: Model<any>,

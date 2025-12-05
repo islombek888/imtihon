@@ -1,3 +1,4 @@
+
 import {
   ExceptionFilter,
   Catch,
@@ -5,31 +6,31 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { MongoError } from 'mongodb';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const response = ctx.getResponse();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
 
     if (exception instanceof HttpException) {
-      status = exception.getStatus();
-      const res = exception.getResponse();
-      message = typeof res === 'string' ? res : (res as any).message || message;
-    } else if (exception && typeof exception === 'object' && (exception as any).message) {
-      message = (exception as any).message;
+      const resp = exception.getResponse();
+      const message = typeof resp === 'string'
+    }
+    else if (exception instanceof MongoError) {
+      status = HttpStatus.BAD_REQUEST;
+      message = exception.message;
     }
 
     response.status(status).json({
+      success: false,
       statusCode: status,
-      timestamp: new Date().toISOString(),
-      path: request.url,
       message,
+      timestamp: new Date().toISOString(),
     });
   }
 }

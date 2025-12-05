@@ -40,7 +40,7 @@ export class WishlistController {
     return this.wishlistService.remove(id);
   }
 
-  // ⭐ Maxsus endpointlar
+  
 
   @Patch(':id/add/:productId')
   addProduct(

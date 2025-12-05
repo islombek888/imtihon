@@ -7,6 +7,7 @@ import { UpdatePaymentDto } from './dto/update-payment.dto';
 
 @Injectable()
 export class PaymentService {
+  [x: string]: any;
   constructor(
     @InjectModel(Payment.name) private paymentModel: Model<Payment>,
   ) {}
