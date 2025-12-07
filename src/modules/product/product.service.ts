@@ -26,7 +26,7 @@ export class ProductService {
 
   async findAllWithFilters(filterDto: ProductFilterDto) {
     const match = buildProductMatch(filterDto);
-    const sort = buildSort(filterDto.sortBy);
+    const sort = buildSort(filterDto.sort);
     const { skip, take } = getPagination(filterDto.page, filterDto.limit);
 
     

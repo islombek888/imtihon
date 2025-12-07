@@ -1,73 +1,139 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { MongooseModule } from '@nestjs/mongoose';
-import { CategoryModule } from 'src/modules/category/category.module';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { CategoryController } from 'src/modules/category/category.controller';
+import { CategoryService } from 'src/modules/category/category.service';
 
+describe('CategoryController', () => {
+  let controller: CategoryController;
+  let service: CategoryService;
 
-describe('Category Module (e2e)', () => {
-  let app: INestApplication;
-  let categoryId: string;
+  const mockCategoryService = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+    addProduct: jest.fn(),
+  };
 
-  beforeAll(async () => {
-    const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [
-        MongooseModule.forRoot('mongodb://127.0.0.1:27017/test_db'),
-        CategoryModule,
-      ]
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [CategoryController],
+      providers: [
+        {
+          provide: CategoryService,
+          useValue: mockCategoryService,
+        },
+      ],
     }).compile();
 
-    app = moduleRef.createNestApplication();
-    await app.init();
+    controller = module.get<CategoryController>(CategoryController);
+    service = module.get<CategoryService>(CategoryService);
   });
 
-  it('POST /category → yangi category yaratish', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/category')
-      .send({
-        name: 'Electronics',
-        description: 'Phones, laptops, gadgets'
-      });
 
-    expect(res.status).toBe(201);
-    expect(res.body.name).toBe('Electronics');
+  it('should create category', async () => {
+    const dto = { name: 'Phones', slug: 'phones' };
+    const result = { id: '1', ...dto };
 
-    categoryId = res.body._id;
+    mockCategoryService.create.mockResolvedValue(result);
+
+    expect(await controller.create(dto)).toEqual(result);
+    expect(service.create).toHaveBeenCalledWith(dto);
   });
 
-  it('GET /category → hamma kategoriyalar', async () => {
-    const res = await request(app.getHttpServer()).get('/category');
+  it('should throw error if slug exists', async () => {
+    const dto = { name: 'Phones', slug: 'phones' };
 
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+    mockCategoryService.create.mockRejectedValue(
+      new BadRequestException('Bunday category mavjud'),
+    );
+
+    await expect(controller.create(dto)).rejects.toThrow(BadRequestException);
   });
 
-  it('GET /category/:id → bitta kategoriyani olish', async () => {
-    const res = await request(app.getHttpServer()).get(`/category/${categoryId}`);
 
-    expect(res.status).toBe(200);
-    expect(res.body._id).toBe(categoryId);
+  it('should return all categories', async () => {
+    const data = [{ id: '1', name: 'Phones' }];
+
+    mockCategoryService.findAll.mockResolvedValue(data);
+
+    expect(await controller.findAll()).toEqual(data);
+    expect(service.findAll).toHaveBeenCalled();
   });
 
-  it('PATCH /category/:id → kategoriyani yangilash', async () => {
-    const res = await request(app.getHttpServer())
-      .patch(`/category/${categoryId}`)
-      .send({
-        name: 'Updated Electronics'
-      });
+  it('should return one category', async () => {
+    const data = { id: '1', name: 'Phones' };
 
-    expect(res.status).toBe(200);
-    expect(res.body.name).toBe('Updated Electronics');
+    mockCategoryService.findOne.mockResolvedValue(data);
+
+    expect(await controller.findOne('1')).toEqual(data);
+    expect(service.findOne).toHaveBeenCalledWith('1');
   });
 
-  it('DELETE /category/:id → kategoriyani o‘chirish', async () => {
-    const res = await request(app.getHttpServer()).delete(`/category/${categoryId}`);
+  it('should throw NotFound for missing category', async () => {
+    mockCategoryService.findOne.mockRejectedValue(
+      new NotFoundException('Category topilmadi'),
+    );
 
-    expect(res.status).toBe(200);
-    expect(res.body._id).toBe(categoryId);
+    await expect(controller.findOne('999')).rejects.toThrow(NotFoundException);
   });
 
-  afterAll(async () => {
-    await app.close();
+  it('should update category', async () => {
+    const dto = { name: 'New Name' };
+    const result = { id: '1', name: 'New Name' };
+
+    mockCategoryService.update.mockResolvedValue(result);
+
+    expect(await controller.update('1', dto)).toEqual(result);
+    expect(service.update).toHaveBeenCalledWith('1', dto);
+  });
+
+  it('should throw NotFound on update missing category', async () => {
+    const dto = { name: 'New Name' };
+
+    mockCategoryService.update.mockRejectedValue(
+      new NotFoundException('Category topilmadi'),
+    );
+
+    await expect(controller.update('999', dto)).rejects.toThrow(NotFoundException);
+  });
+
+
+  it('should delete category', async () => {
+    const result = { message: 'O‘chirildi' };
+
+    mockCategoryService.remove.mockResolvedValue(result);
+
+    expect(await controller.remove('1')).toEqual(result);
+    expect(service.remove).toHaveBeenCalledWith('1');
+  });
+
+  it('should throw NotFound on delete missing category', async () => {
+    mockCategoryService.remove.mockRejectedValue(
+      new NotFoundException('Category topilmadi'),
+    );
+
+    await expect(controller.remove('999')).rejects.toThrow(NotFoundException);
+  });
+
+
+  it('should add product to category', async () => {
+    const result = { id: '1', products: ['p1'] };
+
+    mockCategoryService.addProduct.mockResolvedValue(result);
+
+    expect(await controller.addProduct('1', 'p1')).toEqual(result);
+    expect(service.addProduct).toHaveBeenCalledWith('1', 'p1');
+  });
+
+  it('should throw NotFound if category missing', async () => {
+    mockCategoryService.addProduct.mockRejectedValue(
+      new NotFoundException('Category topilmadi'),
+    );
+
+    await expect(controller.addProduct('999', 'p1')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });

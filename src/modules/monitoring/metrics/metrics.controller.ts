@@ -1,4 +1,4 @@
-// src/modules/monitoring/metrics/metrics.controller.ts
+
 import { Controller, Get, Res } from '@nestjs/common';
 import { MetricsService } from './metrics.service';
 

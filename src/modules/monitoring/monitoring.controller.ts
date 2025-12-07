@@ -1,4 +1,4 @@
-// src/modules/monitoring/monitoring.controller.ts
+
 import { Controller, Get } from '@nestjs/common';
 
 @Controller('monitoring')

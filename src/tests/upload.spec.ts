@@ -1,71 +1,59 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UploadService } from '../modules/upload/upload.service';
-import { UploadController } from '../modules/upload/upload.controller';
+import { UploadController } from 'src/modules/upload/upload.controller';
+import { UploadService } from 'src/modules/upload/upload.service';
 
-describe('UploadModule', () => {
-    let service: UploadService;
 
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            controllers: [UploadController],
-            providers: [
-                {
-                    provide: UploadService,
-                    useValue: {
-                        uploadSingle: jest.fn().mockResolvedValue({
-                            url: 'https://cdn.example.com/uploads/1.jpg',
-                            fileName: '1.jpg',
-                        }),
+describe('UploadController', () => {
+  let controller: UploadController;
+  let service: UploadService;
 
-                        uploadMultiple: jest
-                            .fn()
-                            .mockResolvedValue([
-                                {
-                                    url: 'https://cdn.example.com/uploads/1.jpg',
-                                    fileName: '1.jpg',
-                                },
-                                {
-                                    url: 'https://cdn.example.com/uploads/2.jpg',
-                                    fileName: '2.jpg',
-                                },
-                            ]),
+  const mockService = {
+    uploadSingle: jest.fn(),
+    uploadMultiple: jest.fn(),
+  };
 
-                        deleteFile: jest.fn().mockResolvedValue({ deleted: true }),
-                    },
-                },
-            ],
-        }).compile();
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [UploadController],
+      providers: [
+        { provide: UploadService, useValue: mockService },
+      ],
+    }).compile();
 
-        service = module.get<UploadService>(UploadService);
-    });
+    controller = module.get<UploadController>(UploadController);
+    service = module.get<UploadService>(UploadService);
+  });
 
-    it('service bor bo‘lishi kerak', () => {
-        expect(service).toBeDefined();
-    });
+  it('controller mavjud bo‘lishi kerak', () => {
+    expect(controller).toBeDefined();
+  });
 
-    it('uploadSingle ishlashi kerak', async () => {
-        const result = await service.uploadSingle({
-            originalname: '1.jpg',
-            buffer: Buffer.from('file1'),
-        } as any);
+  it('uploadSingle ishlashi kerak', async () => {
+    const file = { originalname: 'test.png', buffer: Buffer.from('data') };
+    const response = { url: 'https://cdn.example.com/uploads/test.png', fileName: 'test.png' };
 
-        expect(result.url).toContain('cdn');
-        expect(result.fileName).toBe('1.jpg');
-    });
+    mockService.uploadSingle.mockResolvedValue(response);
 
-    it('uploadMultiple ishlashi kerak', async () => {
-        const result = await service.uploadMultiple([
-            { originalname: '1.jpg', buffer: Buffer.from('file1') } as any,
-            { originalname: '2.jpg', buffer: Buffer.from('file2') } as any,
-        ]);
+    const result = await controller.uploadSingle(file as any);
+    expect(result).toEqual(response);
+    expect(service.uploadSingle).toHaveBeenCalledWith(file);
+  });
 
-        expect(result.length).toBe(2);
-        expect(result[0].url).toContain('cdn');
-        expect(result[1].url).toContain('cdn');
-    });
+  it('uploadMultiple ishlashi kerak', async () => {
+    const files = [
+      { originalname: 'a.png', buffer: Buffer.from('1') },
+      { originalname: 'b.png', buffer: Buffer.from('2') },
+    ];
 
-    it('deleteFile ishlashi kerak', async () => {
-        const result = await service.deleteFile('image1.jpg');
-        expect(result.deleted).toBe(true);
-    });
+    const response = [
+      { url: 'https://cdn.example.com/uploads/a.png', fileName: 'a.png' },
+      { url: 'https://cdn.example.com/uploads/b.png', fileName: 'b.png' },
+    ];
+
+    mockService.uploadMultiple.mockResolvedValue(response);
+
+    const result = await controller.uploadMultiple(files as any);
+    expect(result).toEqual(response);
+    expect(service.uploadMultiple).toHaveBeenCalledWith(files);
+  });
 });

@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumberString, IsIn, IsInt } from 'class-validator';
+import { IsOptional, IsString, IsInt, IsIn, Min, IsBoolean } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class ProductFilterDto {
@@ -23,20 +23,31 @@ export class ProductFilterDto {
   storage?: string; 
 
   @IsOptional()
-  @IsNumberString()
-  priceMin?: string;
+  @Transform(({ value }) => Number(value))
+  @IsInt()
+  @Min(0)
+  priceMin?: number;
 
   @IsOptional()
-  @IsNumberString()
-  priceMax?: string;
+  @Transform(({ value }) => Number(value))
+  @IsInt()
+  @Min(0)
+  priceMax?: number;
 
   @IsOptional()
-  @IsNumberString()
-  ratingMin?: string;
+  @Transform(({ value }) => Number(value))
+  @IsInt()
+  @Min(0)
+  ratingMin?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  inStock?: boolean;
 
   @IsOptional()
   @IsIn(['price_asc','price_desc','newest','bestseller','rating_desc'])
-  sortBy?: string;
+  sort?: string;   
 
   @IsOptional()
   @Transform(({ value }) => parseInt(value, 10))

@@ -1,71 +1,104 @@
 import { Test, TestingModule } from '@nestjs/testing';
+
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { UserController } from 'src/modules/user/user.controller';
 import { UserService } from 'src/modules/user/user.service';
+import { UpdateUserDto } from 'src/modules/user/dto/update-user.dto';
+import { ChangePasswordDto } from 'src/modules/user/dto/chane-password.dto';
 
-describe('UserModule', () => {
+
+describe('UserController', () => {
+  let controller: UserController;
   let service: UserService;
+
+  const mockUserService = {
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    changePassword: jest.fn(),
+    delete: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UserController],
       providers: [
-        {
-          provide: UserService,
-          useValue: {
-            register: jest.fn().mockResolvedValue({
-              id: '1',
-              fullName: 'Islom',
-              phone: '+998901234567',
-            }),
-
-            login: jest.fn().mockResolvedValue({
-              accessToken: 'access123',
-              refreshToken: 'refresh123',
-            }),
-
-            getProfile: jest.fn().mockResolvedValue({
-              id: '1',
-              fullName: 'Islom',
-              email: 'islom@example.com',
-            }),
-
-            updateProfile: jest.fn().mockResolvedValue({
-              id: '1',
-              fullName: 'Islom Updated',
-            }),
-          },
-        },
+        { provide: UserService, useValue: mockUserService },
       ],
     }).compile();
 
+    controller = module.get<UserController>(UserController);
     service = module.get<UserService>(UserService);
   });
 
-  it('UserService mavjud bo‘lishi kerak', () => {
-    expect(service).toBeDefined();
+
+  it('should return all users', async () => {
+    const users = [{ id: '1', name: 'John' }];
+    mockUserService.findAll.mockResolvedValue(users);
+
+    expect(await controller.findAll()).toEqual(users);
+    expect(service.findAll).toHaveBeenCalled();
   });
 
-  it('register ishlashi kerak', async () => {
-    const result = await service.register({
-      fullName: 'Islom',
-      phone: '+998901234567',
-      password: '123456',
-    });
-    expect(result.fullName).toBe('Islom');
+
+  it('should return a single user', async () => {
+    const user = { id: '1', name: 'John' };
+    mockUserService.findOne.mockResolvedValue(user);
+
+    expect(await controller.findOne('1')).toEqual(user);
+    expect(service.findOne).toHaveBeenCalledWith('1');
   });
 
-  it('login token qaytarishi kerak', async () => {
-    const result = await service.login('+998901234567', '123456');
-    expect(result.accessToken).toBeDefined();
+  it('should throw NotFoundException if user not found', async () => {
+    mockUserService.findOne.mockRejectedValue(new NotFoundException('User topilmadi'));
+    await expect(controller.findOne('999')).rejects.toThrow(NotFoundException);
   });
 
-  it('profile olish ishlashi kerak', async () => {
-    const result = await service.getProfile('1');
-    expect(result.id).toBe('1');
+  // ============================
+  // UPDATE USER
+  // ============================
+  it('should update a user', async () => {
+    const dto: UpdateUserDto = { name: 'Jane' };
+    const updatedUser = { id: '1', name: 'Jane' };
+
+    mockUserService.update.mockResolvedValue(updatedUser);
+
+    expect(await controller.update('1', dto)).toEqual(updatedUser);
+    expect(service.update).toHaveBeenCalledWith('1', dto);
   });
 
-  it('update profile ishlashi kerak', async () => {
-    const result = await service.updateProfile('1', { fullName: 'Islom Updated' });
-    expect(result.fullName).toBe('Islom Updated');
+  it('should throw NotFoundException if update fails', async () => {
+    mockUserService.update.mockRejectedValue(new NotFoundException('User topilmadi'));
+    await expect(controller.update('999', {})).rejects.toThrow(NotFoundException);
+  });
+
+
+  it('should change user password', async () => {
+    const dto: ChangePasswordDto = { oldPassword: 'old123', newPassword: 'new123' };
+    const result = { message: 'Parol muvaffaqiyatli o‘zgartirildi' };
+
+    mockUserService.changePassword.mockResolvedValue(result);
+
+    expect(await controller.changePassword('1', dto)).toEqual(result);
+    expect(service.changePassword).toHaveBeenCalledWith('1', dto);
+  });
+
+  it('should throw BadRequestException if old password is incorrect', async () => {
+    mockUserService.changePassword.mockRejectedValue(new BadRequestException('Eski parol noto‘g‘ri'));
+    await expect(controller.changePassword('1', { oldPassword: 'x', newPassword: 'y' })).rejects.toThrow(BadRequestException);
+  });
+
+
+  it('should delete a user', async () => {
+    const result = { message: 'User o‘chirildi' };
+    mockUserService.delete.mockResolvedValue(result);
+
+    expect(await controller.delete('1')).toEqual(result);
+    expect(service.delete).toHaveBeenCalledWith('1');
+  });
+
+  it('should throw NotFoundException if delete fails', async () => {
+    mockUserService.delete.mockRejectedValue(new NotFoundException('User topilmadi'));
+    await expect(controller.delete('999')).rejects.toThrow(NotFoundException);
   });
 });

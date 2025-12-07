@@ -1,4 +1,4 @@
-// src/modules/monitoring/health/health.service.ts
+
 import { Injectable } from '@nestjs/common';
 
 @Injectable()

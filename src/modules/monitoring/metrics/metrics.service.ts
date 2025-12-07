@@ -1,4 +1,4 @@
-// src/modules/monitoring/metrics/metrics.service.ts
+
 import { Injectable } from '@nestjs/common';
 import * as client from 'prom-client';
 

@@ -14,11 +14,11 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
-
     "paths": {
-      "src/*": ["src/*"]
+      "src/*": [
+        "src/*"
+      ]
     },
-
     "skipLibCheck": true,
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
@@ -26,15 +26,22 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
   },
-
-  "include": ["src"],
-  "exclude": ["node_modules", "dist", "test", "tests"],
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "tests"
+  ],
   "scripts": {
-  "start": "nest start",
-  "start:dev": "nest start --watch",
-  "build": "nest build",
-  "test": "jest --config jest.config.ts",
-  "test:watch": "jest --watch --config jest.config.ts",
-  "test:cov": "jest --coverage --config jest.config.ts"
- }
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "build": "nest build",
+    "test": "jest --config ./jest.config.ts",
+    "test:watch": "jest --watch --config ./jest.config.ts",
+    "test:cov": "jest --coverage --config ./jest.config.ts",
+    "test:e2e": "jest --config ./test/jest-e2e.json"
+  }
 }

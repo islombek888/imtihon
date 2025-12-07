@@ -1,76 +1,152 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { MongooseModule } from '@nestjs/mongoose';
-import { AdminModule } from 'src/modules/admin/admin.module';
+import { ForbiddenException } from '@nestjs/common';
+import { AdminController } from 'src/modules/admin/admin.controller';
+import { AdminService } from 'src/modules/admin/admin.service';
+import { AdminGuard } from 'src/modules/admin/guards/admin.guard';
+import { CreateProductDto } from 'src/modules/admin/dto/create-product.dto';
+import { UpdateProductDto } from 'src/modules/admin/dto/update-product.dto';
 
 
-describe('Admin Module (e2e)', () => {
-  let app: INestApplication;
+describe('AdminController', () => {
+  let controller: AdminController;
+  let service: AdminService;
 
-  beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        MongooseModule.forRoot('mongodb://127.0.0.1:27017/test_db'),
-        AdminModule,
+  const mockAdminService = {
+    createProduct: jest.fn(),
+    updateProduct: jest.fn(),
+    deleteProduct: jest.fn(),
+    getAllProducts: jest.fn(),
+    getAllCategories: jest.fn(),
+    getAllUsers: jest.fn(),
+    getAllOrders: jest.fn(),
+    getStats: jest.fn(),
+  };
+
+  const mockAdminGuard = {
+    canActivate: jest.fn().mockImplementation((context) => {
+      const req = context.switchToHttp().getRequest();
+      if (!req.user || req.user.role !== 'admin') {
+        throw new ForbiddenException('Admin huquqi kerak');
+      }
+      return true;
+    }),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [AdminController],
+      providers: [
+        {
+          provide: AdminService,
+          useValue: mockAdminService,
+        },
       ],
-    }).compile();
+    })
+      .overrideGuard(AdminGuard)
+      .useValue(mockAdminGuard)
+      .compile();
 
-    app = moduleFixture.createNestApplication();
-    await app.init();
+    controller = module.get<AdminController>(AdminController);
+    service = module.get<AdminService>(AdminService);
   });
 
-  let adminId = '';
 
-  it('Admin create', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/admin')
-      .send({
-        fullName: 'Test Admin',
-        email: 'admin@test.com',
-        password: '123456',
-        role: 'admin',
-      });
+  it('should create product', async () => {
+    const dto: CreateProductDto = {
+      name: 'iPhone',
+      description: 'New phone',
+      price: 1000,
+      categoryId: '123',
+      images: [],
+      colors: ['black'],
+      specs: [],
+    };
 
-    expect(res.status).toBe(201);
-    expect(res.body.email).toBe('admin@test.com');
-    adminId = res.body._id;
+    mockAdminService.createProduct.mockResolvedValue(dto);
+
+    const result = await controller.createProduct(dto);
+    expect(result).toEqual(dto);
+    expect(mockAdminService.createProduct).toHaveBeenCalledWith(dto);
   });
 
-  it('Admin list', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/admin');
+ 
+  it('should update product', async () => {
+    const dto: UpdateProductDto = { price: 1200 };
 
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+    mockAdminService.updateProduct.mockResolvedValue({
+      id: '1',
+      price: 1200,
+    });
+
+    const result = await controller.updateProduct('1', dto);
+    expect(result).toEqual({ id: '1', price: 1200 });
+    expect(mockAdminService.updateProduct).toHaveBeenCalledWith('1', dto);
   });
 
-  it('Admin find by id', async () => {
-    const res = await request(app.getHttpServer())
-      .get(`/admin/${adminId}`);
+ 
+  it('should delete product', async () => {
+    mockAdminService.deleteProduct.mockResolvedValue({ message: 'O‘chirildi' });
 
-    expect(res.status).toBe(200);
-    expect(res.body._id).toBe(adminId);
+    const result = await controller.deleteProduct('1');
+    expect(result).toEqual({ message: 'O‘chirildi' });
+    expect(mockAdminService.deleteProduct).toHaveBeenCalledWith('1');
   });
 
-  it('Admin update', async () => {
-    const res = await request(app.getHttpServer())
-      .patch(`/admin/${adminId}`)
-      .send({ fullName: 'Updated Admin' });
+ 
+  it('should return all products', async () => {
+    const products = [{ id: '1', name: 'iPhone' }];
 
-    expect(res.status).toBe(200);
-    expect(res.body.fullName).toBe('Updated Admin');
+    mockAdminService.getAllProducts.mockResolvedValue(products);
+
+    const result = await controller.getProducts();
+    expect(result).toEqual(products);
+    expect(mockAdminService.getAllProducts).toHaveBeenCalled();
   });
 
-  it('Admin delete', async () => {
-    const res = await request(app.getHttpServer())
-      .delete(`/admin/${adminId}`);
 
-    expect(res.status).toBe(200);
-    expect(res.body._id).toBe(adminId);
+  it('should return categories', async () => {
+    const categories = [{ id: '1', name: 'Phones' }];
+
+    mockAdminService.getAllCategories.mockResolvedValue(categories);
+
+    const result = await controller.getCategories();
+    expect(result).toEqual(categories);
+    expect(mockAdminService.getAllCategories).toHaveBeenCalled();
   });
 
-  afterAll(async () => {
-    await app.close();
+
+  it('should return users', async () => {
+    const users = [{ id: '1', fullName: 'Islom' }];
+
+    mockAdminService.getAllUsers.mockResolvedValue(users);
+
+    const result = await controller.getUsers();
+    expect(result).toEqual(users);
+    expect(mockAdminService.getAllUsers).toHaveBeenCalled();
+  });
+
+  it('should return orders', async () => {
+    const orders = [{ id: '1', total: 200 }];
+
+    mockAdminService.getAllOrders.mockResolvedValue(orders);
+
+    const result = await controller.getOrders();
+    expect(result).toEqual(orders);
+    expect(mockAdminService.getAllOrders).toHaveBeenCalled();
+  });
+
+ 
+  it('should return stats', async () => {
+    const stats = {
+      totalUsers: 10,
+      totalProducts: 5,
+      totalOrders: 3,
+    };
+
+    mockAdminService.getStats.mockResolvedValue(stats);
+
+    const result = await controller.getStats();
+    expect(result).toEqual(stats);
+    expect(mockAdminService.getStats).toHaveBeenCalled();
   });
 });

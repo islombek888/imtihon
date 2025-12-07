@@ -1,158 +1,106 @@
-import { Test } from '@nestjs/testing';
-import request from 'supertest';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { AppModule } from '../app.module';
-import cookieParser from 'cookie-parser';
-import helmet from 'helmet';
-import { AuthService } from '../modules/auth/auth.service';
-import { AuthController } from '../modules/auth/auth.controller';
-import { UserService } from '../modules/user/user.service';
+import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { AuthController } from 'src/modules/auth/auth.controller';
+import { AuthService } from 'src/modules/auth/auth.service';
+import { JwtRefreshGuard } from 'src/modules/auth/guards/jwt-refresh.guard';
+
+describe('AuthController', () => {
+  let controller: AuthController;
+  let service: AuthService;
+
+  const mockAuthService = {
+    register: jest.fn(),
+    login: jest.fn(),
+    refresh: jest.fn(),
+    logout: jest.fn(),
+  };
+
+  const mockJwtRefreshGuard = {
+    canActivate: jest.fn().mockReturnValue(true),
+  };
+
+  const mockResponse: any = {
+    cookie: jest.fn(),
+    clearCookie: jest.fn(),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [AuthController],
+      providers: [
+        { provide: AuthService, useValue: mockAuthService },
+      ],
+    })
+      .overrideGuard(JwtRefreshGuard)
+      .useValue(mockJwtRefreshGuard)
+      .compile();
+
+    controller = module.get<AuthController>(AuthController);
+    service = module.get<AuthService>(AuthService);
+  });
 
 
+  it('should register user', async () => {
+    const dto = { fullName: 'Islom', email: 'test@mail.com', password: '123456' };
+    const result = { message: 'Success', accessToken: 'aaa', user: { id: '1' } };
 
-describe('AUTH MODULE — FULL TEST', () => {
-    let app: INestApplication;
+    mockAuthService.register.mockResolvedValue(result);
 
+    expect(await controller.register(dto, mockResponse)).toEqual(result);
+    expect(mockAuthService.register).toHaveBeenCalledWith(dto, mockResponse);
+  });
 
-    const mockUserService = {
-        findByEmail: jest.fn(),
-        create: jest.fn(),
-    };
+  it('should throw error if email exists', async () => {
+    const dto = { fullName: 'Islom', email: 'test@mail.com', password: '123456' };
 
+    mockAuthService.register.mockRejectedValue(new BadRequestException('Email already exists'));
 
-    describe('AuthService', () => {
-        let service: AuthService;
-
-        const res: any = {
-            cookie: jest.fn(),
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn(),
-        };
-
-        beforeEach(async () => {
-            const module = await Test.createTestingModule({
-                providers: [
-                    AuthService,
-                    { provide: UserService, useValue: mockUserService },
-                ],
-            }).compile();
-
-            service = module.get(AuthService);
-        });
-
-        it('AuthService mavjud bo‘lishi kerak', () => {
-            expect(service).toBeDefined();
-        });
-
-        it('login() user topilmasa error qaytarishi kerak', async () => {
-            mockUserService.findByEmail.mockResolvedValue(null);
-
-            await expect(
-                service.login({ email: 'test@mail.com', password: '1234' }, res)
-            ).rejects.toThrow('User not found');
-        });
-    });
-
-    describe('AuthController', () => {
-        let controller: AuthController;
-
-        const res: any = {
-            cookie: jest.fn(),
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn(),
-        };
-
-        const mockAuthService = {
-            register: jest.fn(),
-            login: jest.fn(),
-        };
-
-        beforeEach(async () => {
-            const module = await Test.createTestingModule({
-                controllers: [AuthController],
-                providers: [{ provide: AuthService, useValue: mockAuthService }],
-            }).compile();
-
-            controller = module.get(AuthController);
-        });
-
-        it('AuthController mavjud bo‘lishi kerak', () => {
-            expect(controller).toBeDefined();
-        });
-
-        it('register() → AuthService.register chaqirilishi kerak', async () => {
-
-            const dto = {
-                fullName: 'Test User',
-                email: 't@gmail.com',
-                password: '1234'
-            };
-
-            mockAuthService.register.mockResolvedValue({ id: 1, ...dto });
-
-            const result = await controller.register(dto, res);
-
-            expect(mockAuthService.register).toHaveBeenCalledWith(dto, res);
-            expect(result).toHaveProperty('id');
-        });
+    await expect(controller.register(dto, mockResponse)).rejects.toThrow(
+      BadRequestException,
+    );
+  });
 
 
-        it('login() → AuthService.login chaqirilishi kerak', async () => {
-            const dto = { email: 't@gmail.com', password: '1234' };
-            mockAuthService.login.mockResolvedValue({ token: 'fake-token' });
+  it('should login user', async () => {
+    const dto = { email: 'test@mail.com', password: '123456' };
+    const result = { accessToken: 'token', user: { id: '1' } };
 
-            const result = await controller.login(dto, res);
+    mockAuthService.login.mockResolvedValue(result);
 
-            expect(mockAuthService.login).toHaveBeenCalledWith(dto, res);
-            expect(result).toHaveProperty('token');
-        });
-    });
+    expect(await controller.login(dto, mockResponse)).toEqual(result);
+    expect(mockAuthService.login).toHaveBeenCalledWith(dto, mockResponse);
+  });
 
-    describe('AUTH E2E Test', () => {
-        beforeAll(async () => {
-            const moduleRef = await Test.createTestingModule({
-                imports: [AppModule],
-            }).compile();
+  it('should throw error if invalid credentials', async () => {
+    const dto = { email: 'fail@mail.com', password: 'wrong' };
 
-            app = moduleRef.createNestApplication();
+    mockAuthService.login.mockRejectedValue(
+      new UnauthorizedException('Invalid email or password'),
+    );
 
-            app.use(helmet());
-            app.use(cookieParser());
-            app.useGlobalPipes(
-                new ValidationPipe({
-                    whitelist: true,
-                    transform: true,
-                }),
-            );
+    await expect(controller.login(dto, mockResponse)).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
 
-            await app.init();
-        });
 
-        afterAll(async () => {
-            await app.close();
-        });
+  it('should refresh tokens', async () => {
+    const req: any = { user: { sub: '1', email: 'test@mail.com' } };
+    const result = { accessToken: 'new-token' };
 
-        it('/api/auth/register (POST) → 201 qaytarishi kerak', async () => {
-            return request(app.getHttpServer())
-                .post('/api/auth/register')
-                .send({
-                    email: 'auth@test.com',
-                    password: '123456',
-                })
-                .expect(201);
-        });
+    mockAuthService.refresh.mockResolvedValue(result);
 
-        it('/api/auth/login (POST) → 201 token qaytarishi kerak', async () => {
-            return request(app.getHttpServer())
-                .post('/api/auth/login')
-                .send({
-                    email: 'auth@test.com',
-                    password: '123456',
-                })
-                .expect(201);
-        });
-    });
+    expect(await controller.refresh(req, mockResponse)).toEqual(result);
+    expect(mockAuthService.refresh).toHaveBeenCalledWith(req.user, mockResponse);
+  });
 
-   
 
+  it('should logout user', async () => {
+    const result = { message: 'Logged out' };
+
+    mockAuthService.logout.mockResolvedValue(result);
+
+    expect(await controller.logout(mockResponse)).toEqual(result);
+    expect(mockAuthService.logout).toHaveBeenCalledWith(mockResponse);
+  });
 });

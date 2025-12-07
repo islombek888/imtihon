@@ -11,35 +11,33 @@ import { UserModule } from './modules/user/user.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { ReviewModule } from './modules/review/review.module';
 import { PromoModule } from './modules/promo/promo.module';
+import { LoggerModule } from './common/logger/logger.module';
+import { DocumentationModule } from './modules/documentation/documentation.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { DeliveryModule } from './modules/delivery/delivery.module';
+import { AdminModule } from './modules/admin/admin.module';
 import databaseConfig from './config/database.config';
 import appConfig from './config/app.config';
 import jwtConfig from './config/jwt.config';
 import s3Config from './config/s3.config';
 import throttleConfig from './config/throttle.config';
 import mailConfig from './config/mail.config';
-import { LoggerModule } from './common/logger/logger.module';
-import { DocumentationModule } from './modules/documentation/documentation.module';
-import { AnalyticsModule } from './modules/analytics/analytics.module';
-import { DeliveryModule } from './modules/delivery/delivery.module';
-
-import { AdminModule } from './modules/admin/admin.module';
-
-
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      load: [appConfig,
+      load: [
+        appConfig,
         databaseConfig,
         jwtConfig,
         mailConfig,
         s3Config,
-        throttleConfig,],
+        throttleConfig,
+      ],
       isGlobal: true
-
     }),
-    MongooseModule.forRoot(process.env.MONGO_URI as string),
 
+    MongooseModule.forRoot(process.env.MONGO_URI as string),
 
     AuthModule,
     UserModule,
@@ -54,16 +52,8 @@ import { AdminModule } from './modules/admin/admin.module';
     DocumentationModule,
     LoggerModule,
     AnalyticsModule,
-    AnalyticsModule,
     DeliveryModule,
-    CartModule,
     AdminModule,
-    CategoryModule,
-    CartModule,
-    DeliveryModule,
-
   ],
-  controllers: [],
-  providers: [],
 })
-export class AppModule { }
+export class AppModule {}

@@ -1,8 +1,8 @@
 import { DocumentBuilder } from '@nestjs/swagger';
 
 export const swaggerConfig = new DocumentBuilder()
-  .setTitle('loyiha ')
-  .setDescription('document ')
+  .setTitle('loyiha')
+  .setDescription('document')
   .setVersion('1.0.0')
   .addBearerAuth(
     {
@@ -16,5 +16,3 @@ export const swaggerConfig = new DocumentBuilder()
     'access-token',
   )
   .build();
-
-

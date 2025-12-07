@@ -49,7 +49,7 @@ export class Order {
 
   @Prop({
     type: {
-      method: String, // cash, card
+      method: String,
       cardNumber: String,
       expiry: String,
       cvv: String,

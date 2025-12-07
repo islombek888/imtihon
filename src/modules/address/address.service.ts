@@ -12,7 +12,7 @@ export class AddressService {
     private addressModel: Model<Address>,
   ) {}
 
-  // Create 
+ 
   async create(dto: CreateAddressDto) {
     if (dto.isDefault) {
       await this.addressModel.updateMany(
@@ -42,7 +42,7 @@ export class AddressService {
     return address;
   }
 
-  // Update
+ 
   async update(id: string, dto: UpdateAddressDto) {
     const address = await this.addressModel.findById(id);
     if (!address) throw new NotFoundException('Manzil topilmadi');

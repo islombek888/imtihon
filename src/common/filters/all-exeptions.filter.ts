@@ -1,4 +1,3 @@
-
 import {
   ExceptionFilter,
   Catch,
@@ -18,9 +17,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
     let message = 'Internal server error';
 
     if (exception instanceof HttpException) {
+      status = exception.getStatus();
       const resp = exception.getResponse();
-      const message = typeof resp === 'string'
+
+      message =
+        typeof resp === 'string'
+          ? resp
+          : (resp as any).message || 'Http Exception';
     }
+
+
     else if (exception instanceof MongoError) {
       status = HttpStatus.BAD_REQUEST;
       message = exception.message;

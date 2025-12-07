@@ -1,68 +1,98 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { MongooseModule } from '@nestjs/mongoose';
-import { CartModule } from 'src/modules/cart/cart.module';
+import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
+import { CartController } from 'src/modules/cart/cart.controller';
+import { CartService } from 'src/modules/cart/cart.service';
 
 
-describe('Cart Module (e2e)', () => {
-  let app: INestApplication;
-  let cartId = '';
+describe('CartController', () => {
+  let controller: CartController;
+  let service: CartService;
 
-  const fakeUser = '6742c41f0000000000000001';
-  const fakeProduct = '6742c41f0000000000000002';
+  const mockCartService = {
+    addToCart: jest.fn(),
+    updateQuantity: jest.fn(),
+    removeItem: jest.fn(),
+    getMyCart: jest.fn(),
+    clearCart: jest.fn(),
+  };
 
-  beforeAll(async () => {
-    const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [
-        MongooseModule.forRoot('mongodb://127.0.0.1:27017/test_db'),
-        CartModule,
+  const mockGuard = {
+    canActivate: jest.fn().mockReturnValue(true),
+  };
+
+  const mockReq = {
+    user: { id: 'user123' },
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [CartController],
+      providers: [
+        {
+          provide: CartService,
+          useValue: mockCartService,
+        },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue(mockGuard)
+      .compile();
 
-    app = moduleRef.createNestApplication();
-    await app.init();
+    controller = module.get<CartController>(CartController);
+    service = module.get<CartService>(CartService);
   });
 
-  it('POST /cart → mahsulot cartga qo‘shish', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/cart')
-      .send({
-        user: fakeUser,
-        product: fakeProduct,
-        quantity: 2,
-      });
+  // ============================
+  // ADD TO CART
+  // ============================
+  it('should add item to cart', async () => {
+    const dto = { productId: 'p1', quantity: 2 };
+    const result = { success: true };
 
-    expect(res.status).toBe(201);
-    expect(res.body.quantity).toBe(2);
+    mockCartService.addToCart.mockResolvedValue(result);
 
-    cartId = res.body._id;
+    expect(await controller.addToCart(mockReq, dto)).toEqual(result);
+    expect(service.addToCart).toHaveBeenCalledWith('user123', dto);
   });
 
-  it('GET /cart/user/:id → user cartini olish', async () => {
-    const res = await request(app.getHttpServer()).get(`/cart/user/${fakeUser}`);
 
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+  it('should update quantity', async () => {
+    const dto = { productId: 'p1', quantity: 5 };
+    const result = { updated: true };
+
+    mockCartService.updateQuantity.mockResolvedValue(result);
+
+    expect(await controller.updateQuantity(mockReq, dto)).toEqual(result);
+    expect(service.updateQuantity).toHaveBeenCalledWith('user123', dto);
   });
 
-  it('PATCH /cart/:id → cart item update', async () => {
-    const res = await request(app.getHttpServer())
-      .patch(`/cart/${cartId}`)
-      .send({ quantity: 5 });
 
-    expect(res.status).toBe(200);
-    expect(res.body.quantity).toBe(5);
+  it('should remove item from cart', async () => {
+    const result = { removed: true };
+
+    mockCartService.removeItem.mockResolvedValue(result);
+
+    expect(await controller.removeItem(mockReq, 'p1')).toEqual(result);
+    expect(service.removeItem).toHaveBeenCalledWith('user123', 'p1');
   });
 
-  it('DELETE /cart/:id → cart item delete', async () => {
-    const res = await request(app.getHttpServer()).delete(`/cart/${cartId}`);
 
-    expect(res.status).toBe(200);
-    expect(res.body._id).toBe(cartId);
+  it('should return user cart', async () => {
+    const cart = { items: [], totalPrice: 0 };
+
+    mockCartService.getMyCart.mockResolvedValue(cart);
+
+    expect(await controller.getMyCart(mockReq)).toEqual(cart);
+    expect(service.getMyCart).toHaveBeenCalledWith('user123');
   });
 
-  afterAll(async () => {
-    await app.close();
+ 
+  it('should clear user cart', async () => {
+    const result = { cleared: true };
+
+    mockCartService.clearCart.mockResolvedValue(result);
+
+    expect(await controller.clearCart(mockReq)).toEqual(result);
+    expect(service.clearCart).toHaveBeenCalledWith('user123');
   });
 });

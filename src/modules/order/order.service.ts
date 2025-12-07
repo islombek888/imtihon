@@ -9,7 +9,7 @@ import { Model, Types } from 'mongoose';
 import { CartService } from '../cart/cart.service';
 import { ProductService } from '../product/product.service';
 import { Order, OrderDocument } from './schema/order.schema';
-import { CreateOrderDto } from './dto/create-order.dto.';
+import { CreateOrderDto } from './dto/create-order.dto';
 
 @Injectable()
 export class OrderService {

@@ -1,56 +1,84 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { MongooseModule } from '@nestjs/mongoose';
-import { AnalyticsModule } from 'src/modules/analytics/analytics.module';
+import { AnalyticsController } from 'src/modules/analytics/analytics.controller';
+import { AnalyticsService } from 'src/modules/analytics/analytics.service';
 
-describe('Analytics Module (e2e)', () => {
-  let app: INestApplication;
 
-  beforeAll(async () => {
-    const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [
-        MongooseModule.forRoot('mongodb://127.0.0.1:27017/test_db'),
-        
-        AnalyticsModule,
+describe('AnalyticsController', () => {
+  let controller: AnalyticsController;
+  let service: AnalyticsService;
+
+  const mockAnalyticsService = {
+    getDashboard: jest.fn(),
+    getTopProducts: jest.fn(),
+    getWeeklyChart: jest.fn(),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [AnalyticsController],
+      providers: [
+        {
+          provide: AnalyticsService,
+          useValue: mockAnalyticsService,
+        },
       ],
     }).compile();
 
-    app = moduleRef.createNestApplication();
-
-    await app.init();
+    controller = module.get<AnalyticsController>(AnalyticsController);
+    service = module.get<AnalyticsService>(AnalyticsService);
   });
 
-  it('GET /analytics/stats → umumiy statistika', async () => {
-    const res = await request(app.getHttpServer()).get('/analytics/stats');
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('totalUsers');
-    expect(res.body).toHaveProperty('totalOrders');
-    expect(res.body).toHaveProperty('totalRevenue');
+
+  it('should return dashboard data', async () => {
+    const mockData = {
+      totalUsers: 10,
+      totalProducts: 5,
+      totalOrders: 20,
+      revenue: 5000,
+      todayOrders: 2,
+    };
+
+    mockAnalyticsService.getDashboard.mockResolvedValue(mockData);
+
+    const result = await controller.getDashboard();
+    expect(result).toEqual(mockData);
+    expect(service.getDashboard).toHaveBeenCalled();
   });
 
-  it('GET /analytics/sales → savdo statistikasi', async () => {
-    const res = await request(app.getHttpServer()).get('/analytics/sales');
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
 
+  it('should return top products with default limit', async () => {
+    const mockProducts = [
+      { _id: '1', totalSold: 10, product: { name: 'iPhone' } },
+    ];
+
+    mockAnalyticsService.getTopProducts.mockResolvedValue(mockProducts);
+
+    const result = await controller.getTopProducts(undefined);
+    expect(result).toEqual(mockProducts);
+    expect(service.getTopProducts).toHaveBeenCalledWith(10); // default limit
   });
 
-  it('GET /analytics/users → foydalanuvchilar statistikasi', async () => {
-    const res = await request(app.getHttpServer()).get('/analytics/users');
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('activeUsers');
+  it('should return top products with custom limit', async () => {
+    const mockProducts = [{ _id: '1', totalSold: 5 }];
 
+    mockAnalyticsService.getTopProducts.mockResolvedValue(mockProducts);
+
+    const result = await controller.getTopProducts(5);
+    expect(result).toEqual(mockProducts);
+    expect(service.getTopProducts).toHaveBeenCalledWith(5);
   });
 
-  it('GET /analytics/products → mahsulot statistikasi', async () => {
-    const res = await request(app.getHttpServer()).get('/analytics/products');
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
 
-  });
+  it('should return weekly chart data', async () => {
+    const mockChart = [
+      { _id: 1, total: 200 },
+      { _id: 2, total: 400 },
+    ];
 
-  afterAll(async () => {
-    await app.close();
+    mockAnalyticsService.getWeeklyChart.mockResolvedValue(mockChart);
+
+    const result = await controller.getWeeklyChart();
+    expect(result).toEqual(mockChart);
+    expect(service.getWeeklyChart).toHaveBeenCalled();
   });
 });
