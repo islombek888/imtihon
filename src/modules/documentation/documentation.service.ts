@@ -28,9 +28,6 @@ export class DocumentationService {
   }
 
   setupVersioning(app: INestApplication) {
-    app.enableVersioning({
-      type: VersioningType.URI,
-      defaultVersion: '1',
-    });
+  
   }
 }

@@ -1,4 +1,4 @@
-// src/common/logger/http-logger.middleware.ts
+
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { AppLoggerService } from './logger.service';
 

@@ -1,19 +1,36 @@
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateCategoryDto {
-  @IsString()
-  @IsNotEmpty()
-  name: string;
+@ApiProperty({
+description: 'Kategoriya nomi',
+example: 'Smartphones',
+})
+@IsString()
+@IsNotEmpty()
+name: string;
 
-  @IsString()
-  @IsNotEmpty()
-  slug: string;
+@ApiProperty({
+description: 'Kategoriya URL slugi',
+example: 'smartphones',
+})
+@IsString()
+@IsNotEmpty()
+slug: string;
 
-  @IsOptional()
-  @IsString()
-  icon?: string;
+@ApiPropertyOptional({
+description: 'Kategoriya ikonkasi (ixtiyoriy)',
+example: 'icon-phone.svg',
+})
+@IsOptional()
+@IsString()
+icon?: string;
 
-  @IsOptional()
-  @IsString()
-  image?: string;
+@ApiPropertyOptional({
+description: 'Kategoriya rasmi (ixtiyoriy)',
+example: 'smartphones.jpg',
+})
+@IsOptional()
+@IsString()
+image?: string;
 }

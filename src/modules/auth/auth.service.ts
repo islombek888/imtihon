@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
@@ -14,37 +10,44 @@ import { User, UserDocument } from './schemas/user.schema';
 
 @Injectable()
 export class AuthService {
+  tokenModel: any;
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwt: JwtService,
   ) { }
 
-
-  async register(dto: RegisterDto, res: Response) {
-    const exist = await this.userModel.findOne({ email: dto.email });
-    if (exist) throw new BadRequestException('Email already exists');
-
+  async register(dto: RegisterDto, res: Response<any, Record<string, any>>) {
     const hash = await bcrypt.hash(dto.password, 10);
+
+    let role = 'user'; 
+
+    
+    if (dto.adminSecret === process.env.ADMIN_SECRET) {
+      role = 'admin';
+    }
 
     const user = await this.userModel.create({
       fullName: dto.fullName,
       email: dto.email,
       password: hash,
+      role,
     });
 
-    return this.generateTokens(user, res);
+    return user;
   }
-
-
   async login(dto: LoginDto, res: Response) {
     const user = await this.userModel.findOne({ email: dto.email });
     if (!user) throw new UnauthorizedException('Invalid email or password');
+
 
     const match = await bcrypt.compare(dto.password, user.password);
     if (!match) throw new UnauthorizedException('Invalid email or password');
 
     return this.generateTokens(user, res);
+
+
   }
+
 
   async generateTokens(user: UserDocument, res: Response) {
     const payload = { sub: user._id, email: user.email };
@@ -56,7 +59,7 @@ export class AuthService {
 
     const refreshToken = await this.jwt.signAsync(payload, {
       secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: '7d'
+      expiresIn: '7d',
     });
 
 
@@ -67,28 +70,29 @@ export class AuthService {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    return {
-      message: 'Success',
-      accessToken,
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-      },
-    };
+
+    await this.userModel.updateOne({ _id: user._id }, { refreshToken });
+
+    return { accessToken, refreshToken };
   }
 
 
   async refresh(user: any, res: Response) {
     const fullUser = await this.userModel.findById(user.sub);
     if (!fullUser) {
-      throw new Error('User not found');
+      throw new UnauthorizedException('User not found');
     }
     return this.generateTokens(fullUser, res);
   }
 
-  async logout(res: Response) {
-    res.clearCookie('refresh-token');
-    return { message: 'Logged out' };
+
+  async logout(userId: string,) {
+    await this.userModel.updateOne(
+      { _id: userId },
+      { $unset: { refreshToken: "" } }
+    );
+
+    return { message: 'Logout successful' };
   }
+
 }
